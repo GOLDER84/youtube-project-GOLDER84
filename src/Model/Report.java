@@ -9,7 +9,8 @@ public class Report {
     private String description;
 
     public Report(int contentId, int reporterId, int reportedUserId, String description) {
-        this.id = idCounter++;
+        idCounter++;
+        this.id = idCounter;
         this.contentId = contentId;
         this.reporterId = reporterId;
         this.reportedUserId = reportedUserId;
