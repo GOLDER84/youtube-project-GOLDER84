@@ -11,15 +11,12 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private User user;
-    private Database database;
-    private DatabaseController databaseController;
-    private ContentController contentController;
+    private Database database = Database.getInstance();
+    private DatabaseController databaseController = DatabaseController.getInstance();
+    private ChannelController channelController = ChannelController.getInstance();
     private static UserController instance;
-
+    public User lastSignedUpUser;
     public UserController() {
-        this.database = Database.getInstance();
-        this.databaseController = DatabaseController.getInstance();
-        this.contentController = ContentController.getInstance();
     }
     public static UserController getInstance() {
         if (instance == null) {
@@ -27,7 +24,9 @@ public class UserController {
         }
         return instance;
     }
-
+//    public int getLastSignedUpUserId(){
+//        return lastSignedUpUser.getId();
+//    }
     public String createAccount(String username, String password, String fullName, String email, String phone, String profileCover) {
         String validation = checkSignupInputs(username, password, fullName, email, phone, profileCover);
         if (!validation.equals("Valid")) {
@@ -38,6 +37,7 @@ public class UserController {
         }
         User newUser = new NormalUser(username, password, fullName, email, phone , profileCover);
         databaseController.getUsers().add(newUser);
+        lastSignedUpUser = newUser;
         return "Account created successfully";
     }
 
@@ -49,7 +49,8 @@ public class UserController {
                 return "You are banned";
             }
             else {
-                this.user = foundUser;
+                lastSignedUpUser = foundUser;
+                this.user = lastSignedUpUser;
                 return "Logged in successfully.Welcome" + user.getUsername();
             }
         }
@@ -57,11 +58,12 @@ public class UserController {
     }
 
     public String logout() {
-        if (this.user == null) {
+        if (this.lastSignedUpUser == null) {
             return "You are not logged in";
         }
         String username = this.user.getUsername();
         this.user = null;
+        lastSignedUpUser = null;
         return "Logged out successfully.Goodbye" + username;
     }
 
@@ -76,12 +78,20 @@ public class UserController {
         if (phoneNumber == null || !phoneNumber.matches("\\d{10,15}")) {
             return "Invalid phone number";
         }
-        if (profileCover == null || !profileCover.matches("^[\\w-]+$")) {
+        if (profileCover == null) {
             return "Invalid profile cover";
         }
         return "Valid";
     }
-
+    public String editPassword(String newPassword) {
+        if (newPassword == null || newPassword.isEmpty()) return "Password cannot be empty";
+        if (newPassword.equals(this.user.getPassword())) {
+            return "Password Should be different";
+        }
+        if (!checkPasswordStrength(newPassword)) return "Password is too weak";
+        this.user.setPassword(newPassword);
+        return "Password updated successfully";
+    }
     public boolean checkPasswordStrength(String password) {
         return password.length() >= 6 && password.matches(".*[A-Za-z].*") && password.matches(".*\\d.*");
     }
@@ -92,38 +102,18 @@ public class UserController {
                 (user instanceof PremiumUser) ? "Premium" : "Normal" , user.getUserChannel() , user.getBalance());
     }
 
-    public String editProfile(String newUsername , String newPassword , String newFullName, String newEmail, String newPhone, String newProfileCover) {
-        String validation = checkSignupInputs(newUsername , newPassword ,newFullName , newEmail , newPhone , newProfileCover);
-        if (!validation.equals("Valid")) {
-            return validation;
+    public String editProfile(String newFullName) {
+        if (newFullName == null || newFullName.isEmpty()) return "Full Name cannot be empty";
+        if (newFullName.equals(this.user.getFullName())) {
+            return "New Full Name should be different";
         }
-        user.setUsername(newUsername);
-        user.setPassword(newPassword);
         user.setFullName(newFullName);
-        user.setEmail(newEmail);
-        user.setPhone(newPhone);
-        user.setProfileCover(newProfileCover);
         return "Profile updated successfully";
-    }
-
-    public String changePassword(String oldPassword, String newPassword) {
-    if (!user.getPassword().equals(oldPassword)) {
-        return "Password does not match";
-    }
-    if (!checkPasswordStrength(newPassword)) {
-        return "Password is too weak";
-    }
-    user.setPassword(newPassword);
-    return "Password changed successfully";
     }
 
     public String createPlaylist(String playlistName) {
         if (user instanceof NormalUser && ((NormalUser) user).getMaxPlaylists() <= user.getPlaylists().size()) {
             return "You Have reached the maximum number of playlists";
-        }
-        if (user.getPlaylists().isEmpty()){
-            user.getPlaylists().add(new Playlist("Liked"));
-            user.getPlaylists().add(new Playlist("Watch Later"));
         }
         Playlist newPlaylist = new Playlist(playlistName);
         user.getPlaylists().add(newPlaylist);
@@ -151,9 +141,8 @@ public class UserController {
 //        databaseController.updateUser(user);
 //        return "Playlist created successfully";
 //    }
-    public String chooseFavouriteCategory(int userId , ArrayList<Category> categories) {
-        User user = databaseController.getUserById(userId);
-        if (user == null) {
+    public String chooseFavouriteCategory(ArrayList<Category> categories) {
+        if (lastSignedUpUser == null) {
             return "User not found";
         }
         if (categories == null || categories.size() > 4 || categories.isEmpty()){
@@ -166,28 +155,18 @@ public class UserController {
                 }
             }
         }
-        user.getFavoriteCategories().clear();
-        user.getFavoriteCategories().addAll(categories);
-        databaseController.updateUser(user);
+        lastSignedUpUser.getFavoriteCategories().addAll(categories);
+        databaseController.updateUser(lastSignedUpUser);
         return "Favorite categories updated successfully!";
     }
 
-    public ArrayList<Content> processSortRequest(char sortType) {
-    return contentController.sortContents(sortType);
-    }
-
-    public ArrayList<Content> processContentTypeFilter(char contentType) {
-        return contentController.filterByType(contentType);
-    }
-
-    public ArrayList<Content> processAdvancedFilter(char filterType, String filterValue) {
-        return contentController.filterAdvanced(filterType, filterValue);
-    }
-
     public String addContentToPlaylist(int playlistId, int contentId) {
-        Playlist playlist = user.getPlaylists().stream().filter(p -> p.getId() == playlistId).findFirst().orElse(null);
+        Playlist playlist = user.getPlaylistById(playlistId);
         if (playlist == null) {
-            return "Playlist does not exist";
+            playlist=channelController.getPlaylistById(String.valueOf(playlistId));
+            if (playlist == null) {
+                return "Playlist does not exist";
+            }
         }
         Content content = database.getAllContent().stream().filter(c -> c.getId() == contentId).findFirst().orElse(null);
         if (content == null) {
@@ -208,7 +187,7 @@ public class UserController {
     }
 
     public String playContent(int contentId) {
-       Content content = database.getAllContent().stream().filter(c -> c.getId() == contentId).findFirst().orElse(null);
+       Content content = databaseController.getContents().stream().filter(c -> c.getId() == contentId).findFirst().orElse(null);
        if (content == null) {
            return "Content does not exist";
        }
@@ -216,7 +195,7 @@ public class UserController {
            return "This content is for premium users";
        }
        content.setViews(content.getViews() + 1);
-       return String.format("Streaming: %s\nName: %s\nDescription: %s\nCategory: %s\nTime:" , content.getName() ,content.getDescription() , content.getCategory() , content.getDuration());
+       return String.format("Streaming: \nName: %s\nDescription: %s\nCategory: %s\nTime: %s" , content.getName() ,content.getDescription() , content.getCategory() , content.getDuration());
     }
 
     public String likeContent(int contentId) {
@@ -229,11 +208,21 @@ public class UserController {
         return "Content liked. Total likes: " + user.getLikedContentsCount();
     }
 
-    public ArrayList<Object> searchContent(String query) {
+    public String searchContent(String query) {
         ArrayList<Object> results = new ArrayList<>();
-        results.addAll(database.getAllContent().stream().filter(c -> c.getName().toLowerCase().contains(query.toLowerCase())).toList());
-        results.addAll(database.getAllChannel().stream().filter(c -> c.getChannelName().toLowerCase().contains(query.toLowerCase())).toList());
-        return results;
+        for (Content content : database.getAllContent()) {
+            if (content.getName().toLowerCase().contains(query.toLowerCase())) {
+                results.add(content.getName());
+            }
+        }
+        for (Channel channel : database.getAllChannel()){
+            if (channel.getChannelName().toLowerCase().contains(query.toLowerCase())) {
+                results.add(channel.getChannelName());
+            }
+        }
+//        results.addAll(database.getAllContent().stream().filter(c -> c.getName().toLowerCase().contains(query.toLowerCase())).toList());
+//        results.addAll(database.getAllChannel().stream().filter(c -> c.getChannelName().toLowerCase().contains(query.toLowerCase())).toList());
+        return results.toString();
     }
 
     public String reportContent(int contentId , String reason) {
@@ -261,15 +250,19 @@ public class UserController {
         if (playlist == null) {
             return "Playlist does not exist";
         }
-        StringBuilder result = new StringBuilder(String.format("Playlist: %s\nContents:\n", playlist.getPlaylistName()));
-        for (Content content : playlist.getContentList()) {
-            result.append(" - ").append(content.getName()).append("\n");
+        StringBuilder result = new StringBuilder("Playlist: \n");
+        for (Playlist playlist1 : user.getPlaylists()) {
+            result.append(playlist1.toString()).append("\n");
+            result.append("Contents:\n");
+            for (Content content : playlist.getContentList()) {
+                result.append(" - ").append(content.getName()).append("\n");
+            }
         }
         return result.toString();
     }
 
-    public ArrayList<Content> showSuggestedContents() {
-        return databaseController.getContents().stream()
+    public String showSuggestedContents() {
+        ArrayList<Content> suggestedContents = databaseController.getContents().stream()
                 .filter(content ->
                         user.getFavoriteCategories().contains(content.getCategory()) ||
                                 user.getLikedContent().contains(content) ||
@@ -278,6 +271,7 @@ public class UserController {
                 .sorted(Comparator.comparingInt(Content::getViews).reversed())
                 .limit(10)
                 .collect(Collectors.toCollection(ArrayList::new));
+        return suggestedContents.toString();
     }
 
     public ArrayList<Channel> showSubscribedChannels() {
@@ -299,13 +293,7 @@ public class UserController {
         if (channel == null) {
             return "Channel does not exist";
         }
-        StringBuilder result = new StringBuilder(String.format("Channel: %s\nDescription:\n %sSubscribers\n %sContents:\n", channel.getChannelName() , channel.getChannelDescription() , channel.getSubscribers().size()));
-        for (int contentId : channel.getContentId()) {
-            Content content = database.getAllContent().get(contentId);
-            if (content != null) {
-                result.append("- ").append(content.getName()).append("\n");
-            }
-        }
+        StringBuilder result = new StringBuilder(String.format("Channel: %s\nDescription: %s\nSubscribers:%s\n", channel.getChannelName() , channel.getChannelDescription() , channel.getSubscribers().size()));
         return result.toString();
     }
 
@@ -337,10 +325,12 @@ public class UserController {
     }
 
     public String createChannel(String channelName , String description , String cover) {
-        if (user.getUsername() != null) {
+        if (user.getUserChannel() != null) {
             return "You already have a channel";
         }
+
         user.createChannel(channelName , description , cover);
+        channelController.setChannel(user.getUserChannel());
         database.getAllChannel().add(user.getUserChannel());
         return "Channel created successfully";
     }
@@ -353,12 +343,12 @@ public class UserController {
         return String.format("%s credits added to your account", amount);
     }
 
-    public String loginChannel(){
-        if (user.getUserChannel() == null) {
-            return "You do not have a channel";
-        }
-        return "Channel logged in successfully";
-    }
+//    public String loginChannel(){
+//        if (user.getUserChannel() == null) {
+//            return "You do not have a channel";
+//        }
+//        return "Channel logged in successfully";
+//    }
 
     public String showChannelContentAndInfo() {
         if (user.getUserChannel() == null) {
@@ -366,25 +356,25 @@ public class UserController {
         }
         Channel channel = user.getUserChannel();
         StringBuilder result = new StringBuilder(String.format("Channel: %s\nContents:\n", channel.getChannelName()));
-        for (int contentId : channel.getContentId()) {
-            Content content = database.getAllContent().get(contentId);
+        for (Content content : channel.getPlaylists().getFirst().getContentList()) {
             result.append("- ").append(content.getName()).append("\n");
         }
         return result.toString();
     }
 
     public String showChannelSubscribers() {
-        if (user.getUserChannel() == null) {
-            return "You do not have a channel";
-        }
-        StringBuilder result = new StringBuilder("Subscribers:\n");
-        for (int subscriberId : user.getUserChannel().getSubscribersList()){
-            User subscriber = databaseController.getUserById(subscriberId);
-            if (subscriber != null) {
-                result.append("- ").append(subscriber.getUsername()).append("\n");
-            }
-        }
-        return result.toString();
+//        if (user.getUserChannel() == null) {
+//            return "You do not have a channel";
+//        }
+//        StringBuilder result = new StringBuilder("Subscribers:\n");
+//        for (int subscriberId : user.getUserChannel().getSubscribersList()){
+//            String subscriber = channelController.showSubscribersList();
+//            if (subscriber != null) {
+//                result.append("- ").append(subscriber.getUsername()).append("\n");
+//            }
+//        }
+//        return result.toString();
+        return channelController.showSubscribersList();
     }
     public String editChannelName(String name) {
         if (user.getUserChannel() == null) {
@@ -399,5 +389,11 @@ public class UserController {
         }
         user.getUserChannel().setChannelDescription(description);
         return "Channel information updated successfully";
+    }
+    public int getUserById(){
+        return user.getId();
+    }
+    public int getUserChannelId(){
+       return user.getUserChannelById();
     }
 }
