@@ -10,11 +10,12 @@ import java.util.stream.Collectors;
 
 public class ContentController {
     private Content content;
-    private DatabaseController databaseController;
+    private DatabaseController databaseController = DatabaseController.getInstance();
+    private ChannelController channelController = ChannelController.getInstance();
+    private UserController userController = UserController.getInstance();
+    private Channel channel;
     private static ContentController instance;
-    public ContentController() {
-        this.databaseController = DatabaseController.getInstance();
-    }
+    private User lastSignUpUser;
 
     public static ContentController getInstance() {
         if (instance == null) {
@@ -22,48 +23,56 @@ public class ContentController {
         }
         return instance;
     }
-
-    public String showContent(int contentId) {
-        Content content = databaseController.getContentById(contentId);
-        if (content == null) {
-            return "Content not found";
-        }
-        if (content instanceof NormalVideo){
-            return String.format("Streaming NormalVideo: %s\nName: %s\nDescription: %s\nViews: %s\nLikes %s\nCategory: %s\nTime:" , content.getName() ,content.getDescription() , content.getViews() , content.getLikes() ,  content.getCategory() , content.getDuration());
-        }
-        if (content instanceof ShortVideo){
-            return String.format("Streaming ShortVideo: %s\nName: %s\nDescription: %s\nViews: %s\nLikes %s\nCategory: %s\nTime:" , content.getName() ,content.getDescription() , content.getViews() , content.getLikes() ,  content.getCategory() , content.getDuration());
-        }
-        if (content instanceof LiveStream){
-            return String.format("Streaming LiveStream: %s\nName: %s\nDescription: %s\nViews: %s\nLikes %s\nCategory: %s\nTime: %s\nSubtitle: " , content.getName() ,content.getDescription() , ((LiveStream) content).getCurrentViewers() , content.getLikes() ,  content.getCategory() , content.getDuration() , ((LiveStream) content).getSubtitles());
-        }
-        return String.format("Streaming Podcast: %s\nName: %s\nDescription: %s\nViews: %s\nLikes %s\nCategory: %s\nTime:" , content.getName() ,content.getDescription() , content.getViews() , content.getLikes() ,  content.getCategory() , content.getDuration());
-    }
-    public ArrayList<Content> sortContents(char sortType) {
+//    public String showContent(int contentId) {
+//        Content content = databaseController.getContentById(contentId);
+//        if (content == null) {
+//            return "Content not found";
+//        }
+//        if (content instanceof NormalVideo){
+//            return String.format("Streaming NormalVideo: %s\nName: %s\nDescription: %s\nViews: %s\nLikes %s\nCategory: %s\nTime:" , content.getName() ,content.getDescription() , content.getViews() , content.getLikes() ,  content.getCategory() , content.getDuration());
+//        }
+//        if (content instanceof ShortVideo){
+//            return String.format("Streaming ShortVideo: %s\nName: %s\nDescription: %s\nViews: %s\nLikes %s\nCategory: %s\nTime:" , content.getName() ,content.getDescription() , content.getViews() , content.getLikes() ,  content.getCategory() , content.getDuration());
+//        }
+//        if (content instanceof LiveStream){
+//            return String.format("Streaming LiveStream: %s\nName: %s\nDescription: %s\nViews: %s\nLikes %s\nCategory: %s\nTime: %s\nSubtitle: " , content.getName() ,content.getDescription() , ((LiveStream) content).getCurrentViewers() , content.getLikes() ,  content.getCategory() , content.getDuration() , ((LiveStream) content).getSubtitles());
+//        }
+//        return String.format("Streaming Podcast: %s\nName: %s\nDescription: %s\nViews: %s\nLikes %s\nCategory: %s\nTime:" , content.getName() ,content.getDescription() , content.getViews() , content.getLikes() ,  content.getCategory() , content.getDuration());
+//    }
+    public ArrayList<Content> sortContents(String sortType) {
         ArrayList<Content> contents = new ArrayList<>(databaseController.getContents());
 
-        switch (Character.toUpperCase(sortType)) {
-            case 'L' -> contents.sort(Comparator.comparingInt(Content::getLikes).reversed());
-            case 'V' -> contents.sort(Comparator.comparingInt(Content::getViews).reversed());
+        switch (sortType.toUpperCase()) {
+            case "L" -> contents.sort(Comparator.comparingInt(Content::getLikes).reversed());
+            case "V" -> contents.sort(Comparator.comparingInt(Content::getViews).reversed());
             default -> throw new IllegalArgumentException("Invalid sort type. Use 'L' or 'V'");
         }
         return contents;
     }
 
-    public ArrayList<Content> filterByType(char contentType) {
-        return databaseController.getContents().stream()
-                .filter(content -> {
-                    switch (Character.toUpperCase(contentType)) {
-                        case 'V' -> { return content instanceof Video; }
-                        case 'P' -> { return content instanceof Podcast; }
-                        default -> throw new IllegalArgumentException("Invalid content type. Use 'V' or 'P'");
-                    }}).collect(Collectors.toCollection(ArrayList::new));
+    public ArrayList<Content> filterByType(String contentType) {
+        ArrayList<Content> contents = new ArrayList<>();
+        if(contentType.equals("V")){
+            for(Content c : databaseController.getContents()){
+                if (c instanceof Video){
+                    contents.add(c);
+                }
+            }
+        }
+        else if(contentType.equals("P")){
+            for(Content c : databaseController.getContents()){
+                if (c instanceof Podcast){
+                    contents.add(c);
+                }
+            }
+        }
+        return contents;
     }
 
-    public ArrayList<Content> filterAdvanced(char filterType, String filterValue) {
+    public ArrayList<Content> filterAdvanced(String filterType, String filterValue) {
         ArrayList<Content> allContents = databaseController.getContents();
         ArrayList<Content> filteredContents = new ArrayList<>();
-        char upperFilterType = Character.toUpperCase(filterType);
+        char upperFilterType = filterType.toUpperCase().charAt(0);
         String upperFilterValue = filterValue.toUpperCase();
 
         for (Content content : allContents) {
@@ -97,40 +106,46 @@ public class ContentController {
         }
     }
 
-    public ArrayList<Content> showOfferedContent(String type) {
-        ArrayList<Content> allContent = databaseController.getContents();
-        ArrayList<Content> filteredContent = new ArrayList<>();
-
-        for (Content content : allContent) {
-            if (("video".equalsIgnoreCase(type) && content instanceof NormalVideo) ||
-                    ("podcast".equalsIgnoreCase(type) && content instanceof Podcast) ||
-                    ("shortvideo".equalsIgnoreCase(type) && content instanceof ShortVideo) ||
-                    ("livestream".equalsIgnoreCase(type) && content instanceof LiveStream)) {
-                filteredContent.add(content);
-            }
-        }
-        return filteredContent;
-    }
-    public String createPodcast(int ownerId, int channelId, String name, String description, int duration, Category category, String fileLink, String cover ,User ownerOfPodcast , boolean isExclusive){
-        Content podcast = new Podcast(ownerId , channelId , name , description , duration, category, fileLink, cover , ownerOfPodcast , isExclusive);
+//    public ArrayList<Content> showOfferedContent(String type) {
+//        ArrayList<Content> allContent = databaseController.getContents();
+//        ArrayList<Content> filteredContent = new ArrayList<>();
+//
+//        for (Content content : allContent) {
+//            if (("video".equalsIgnoreCase(type) && content instanceof NormalVideo) ||
+//                    ("podcast".equalsIgnoreCase(type) && content instanceof Podcast) ||
+//                    ("shortvideo".equalsIgnoreCase(type) && content instanceof ShortVideo) ||
+//                    ("livestream".equalsIgnoreCase(type) && content instanceof LiveStream)) {
+//                filteredContent.add(content);
+//            }
+//        }
+//        return filteredContent;
+//    }
+    public String createPodcast( String name,String description,
+                                 String duration, String category,
+                                 String fileLink, String cover , String isExclusive){
+        Content podcast = new Podcast(userController.lastSignedUpUser.getId() , userController.getUserChannelId() , name , description , duration, Category.valueOf(category.toUpperCase()), fileLink, cover , isExclusive.equals("Y"));
         databaseController.addContent(podcast);
+        channelController.addContentToChannel(podcast.getId());
         return "Podcast created";
     }
-    public String createLiveStream(int ownerId, int channelId, String name, String description, int duration, Category category, String fileLink, String cover, String subtitles , int currentViewers, LocalDate scheduledTime){
-        Content liveStream = new LiveStream(ownerId , channelId , name , description , duration , category , fileLink , cover , subtitles , currentViewers , scheduledTime);
+    public String createLiveStream(String name ,String isExclusive, String description, String duration, String category, String fileLink, String cover, String subtitles , String scheduledTime){
+        Content liveStream = new LiveStream(userController.lastSignedUpUser.getId() , userController.getUserChannelId(), name ,isExclusive.equals("Y"), description , duration , Category.valueOf(category.toUpperCase()) , fileLink , cover , subtitles , 0 , LocalDate.parse(scheduledTime));
         databaseController.addContent(liveStream);
+        channelController.addContentToChannel(liveStream.getId());
         return "Live stream created";
     }
 
-    public String createNormalVideo(int ownerId, int channelId, String name, String description, int duration, Category category, String fileLink, String cover, String subtitles , Format format, Quality quality){
-        Content normalVideo = new NormalVideo(ownerId , channelId , name , description , duration , category , fileLink , cover , subtitles , format , quality);
+    public String createNormalVideo(String name , String isExclusive, String description, String duration, String category, String fileLink, String cover, String subtitles ,String quality ,String format){
+        Content normalVideo = new NormalVideo(userController.lastSignedUpUser.getId() , userController.getUserChannelId(), name ,isExclusive.equals("Y") ,description , duration , Category.valueOf(category.toUpperCase()) , fileLink , cover , subtitles , Format.valueOf(format) , Quality.valueOf(quality));
         databaseController.addContent(normalVideo);
+        channelController.addContentToChannel(normalVideo.getId());
         return "Normal video created";
     }
 
-    public String createShortVideo(int ownerId, int channelId, String name, String description, int duration, Category category, String fileLink, String cover, String subtitles , String referenceMusic){
-        Content shortVideo = new ShortVideo(ownerId , channelId , name , description , duration , category , fileLink , cover , subtitles , referenceMusic);
+    public String createShortVideo(String name , String isExclusive, String description, String duration, String category, String fileLink, String cover, String subtitles , String referenceMusic){
+        Content shortVideo = new ShortVideo(userController.lastSignedUpUser.getId() , userController.getUserChannelId() , name ,isExclusive.equals("Y") ,  description , duration , Category.valueOf(category.toUpperCase()) , fileLink , cover , subtitles , referenceMusic);
         databaseController.addContent(shortVideo);
+        channelController.addContentToChannel(shortVideo.getId());
         return "Short video created";
     }
 
