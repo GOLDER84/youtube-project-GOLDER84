@@ -4,10 +4,9 @@ import Model.*;
 
 public class PlaylistController {
     private Playlist playlist;
-    private DatabaseController databaseController;
+    private DatabaseController databaseController = DatabaseController.getInstance();
     private static PlaylistController instance;
     public PlaylistController() {
-        this.databaseController = DatabaseController.getInstance();
     }
     public static PlaylistController getInstance() {
         if (instance == null) {
@@ -30,6 +29,7 @@ public class PlaylistController {
 
         return user.getPlaylists().stream().filter(p -> p.getId() == playlistId).findFirst().orElse(null);
     }
+
 
     public String addContentToPlaylist(int contentId) {
         Content content = databaseController.getContentById(contentId);
