@@ -6,11 +6,10 @@ import java.util.Date;
 
 public class CommentController {
     private Comment comment;
-    private DatabaseController databaseController;
+    private DatabaseController databaseController = DatabaseController.getInstance();
     private static CommentController instance;
 
     public CommentController() {
-        this.databaseController = DatabaseController.getInstance();
     }
 
     public static CommentController getInstance() {
@@ -20,18 +19,18 @@ public class CommentController {
         return instance;
     }
 
-    public String addComment(int userCommenterId, String description) {
-        User user = databaseController.getUserById(userCommenterId);
-        if(user == null) {
-            return "User not found";
-        }
-        if(description == null || description.isEmpty()) {
-            return "Comment cannot be empty";
-        }
-        Comment newComment = new Comment(userCommenterId , description , new Date());
-        comment = newComment;
-        return "Comment added successfully";
-    }
+//    public String addComment(int userCommenterId, String description) {
+//        User user = databaseController.getUserById(userCommenterId);
+//        if(user == null) {
+//            return "User not found";
+//        }
+//        if(description == null || description.isEmpty()) {
+//            return "Comment cannot be empty";
+//        }
+//        Comment newComment = new Comment(userCommenterId , description , new Date());
+//        comment = newComment;
+//        return "Comment added successfully";
+//    }
 
     public String deleteComment(int userCommenterId) {
         if (comment.getUserCommenterId() != userCommenterId) {
