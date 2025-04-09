@@ -11,7 +11,7 @@ public abstract class Content {
     private String name;
     private boolean isExclusive;
     private String description;
-    private int duration;
+    private String duration;
     private int views;
     private int likes;
     private Date publishDate;
@@ -19,12 +19,14 @@ public abstract class Content {
     private String fileLink;
     private String cover;
     private ArrayList<Comment> commentList;
-    public Content(int ownerId , int channelId ,String name, String description, int duration,
+    public Content(int ownerId , int channelId ,String name , boolean isExclusive, String description, String duration,
                    Category category, String fileLink, String cover) {
-        this.id = idCounter++;
+        idCounter++;
+        this.id = idCounter;
         this.ownerId = ownerId;
         this.channelId = channelId;
         this.name = name;
+        this.isExclusive = isExclusive;
         this.isExclusive = false;
         this.description = description;
         this.duration = duration;
@@ -81,11 +83,11 @@ public abstract class Content {
         this.description = description;
     }
 
-    public int getDuration() {
+    public String getDuration() {
         return duration;
     }
 
-    public void setDuration(int duration) {
+    public void setDuration(String duration) {
         this.duration = duration;
     }
 
