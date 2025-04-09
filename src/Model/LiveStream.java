@@ -7,8 +7,8 @@ public class LiveStream extends Video{
     private int currentViewers;
     private LocalDate scheduledTime;
 
-    public LiveStream(int ownerId, int channelId, String name, String description, int duration, Category category, String fileLink, String cover, String subtitles , int currentViewers, LocalDate scheduledTime) {
-        super(ownerId, channelId, name, description, duration, category, fileLink, cover, subtitles);
+    public LiveStream(int ownerId, int channelId, String name , boolean isExclusive, String description, String duration, Category category, String fileLink, String cover, String subtitles , int currentViewers, LocalDate scheduledTime) {
+        super(ownerId, channelId, name, isExclusive,description, duration, category, fileLink, cover, subtitles);
         this.currentViewers = currentViewers;
         this.scheduledTime = scheduledTime;
     }
