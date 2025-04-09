@@ -6,10 +6,9 @@ import java.util.ArrayList;
 
 public class DatabaseController {
     private static DatabaseController instance;
-    private Database database;
+    private Database database = Database.getInstance();
 
     public DatabaseController() {
-        this.database = Database.getInstance();
     }
 
     public static DatabaseController getInstance() {
@@ -48,14 +47,6 @@ public class DatabaseController {
 
     public Channel getChannelById(int id) {
         return database.getAllChannel().stream().filter(channel -> channel.getChannelId() == id).findFirst().orElse(null);
-    }
-
-    public void addReport(Report report) {
-        database.getAllReport().add(report);
-    }
-
-    public void removeReport(Report report) {
-        database.getAllReport().remove(report);
     }
 
     public void addContent(Content content) {
@@ -97,31 +88,39 @@ public class DatabaseController {
     }
 
 
-    public ArrayList<Content> searchContent(String query) {
-        ArrayList<Content> result = new ArrayList<>();
-        for (Content c : getContents()) {
-            if (c.getName().toLowerCase().contains(query.toLowerCase())) {
-                result.add(c);
+//    public ArrayList<Content> searchContent(String query) {
+//        ArrayList<Content> result = new ArrayList<>();
+//        for (Content c : getContents()) {
+//            if (c.getName().toLowerCase().contains(query.toLowerCase())) {
+//                result.add(c);
+//            }
+//        }
+//        return result;
+//    }
+//    public ArrayList<Channel> searchChannelName(String query) {
+//        ArrayList<Channel> result = new ArrayList<>();
+//        for (Channel c : getChannels()) {
+//            if (c.getChannelName().toLowerCase().contains(query.toLowerCase())) {
+//                result.add(c);
+//            }
+//        }
+//        return result;
+//    }
+//    public void updateContent(Content updatedContent) {
+//        for (int i = 0; i < getContents().size(); i++) {
+//            if (getContents().get(i).getId() == updatedContent.getId()) {
+//                getContents().get(i).setName(updatedContent.getName());
+//                return;
+//            }
+//        }
+//        getContents().add(updatedContent);
+//    }
+    public Report getReportById(int id) {
+        for (Report report : getReports()) {
+            if (report.getId() == id) {
+                return report;
             }
         }
-        return result;
-    }
-    public ArrayList<Channel> searchChannelName(String query) {
-        ArrayList<Channel> result = new ArrayList<>();
-        for (Channel c : getChannels()) {
-            if (c.getChannelName().toLowerCase().contains(query.toLowerCase())) {
-                result.add(c);
-            }
-        }
-        return result;
-    }
-    public void updateContent(Content updatedContent) {
-        for (int i = 0; i < getContents().size(); i++) {
-            if (getContents().get(i).getId() == updatedContent.getId()) {
-                getContents().get(i).setName(updatedContent.getName());
-                return;
-            }
-        }
-        getContents().add(updatedContent);
+        return null;
     }
 }
