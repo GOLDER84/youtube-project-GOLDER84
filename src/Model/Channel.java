@@ -10,22 +10,32 @@ public class Channel {
     private String channelCover;
     private int channelOwnerId;
     private ArrayList<Playlist> playlists;
+    private int allContentPlaylistId;
     private ArrayList<User> subscribers;
     private ArrayList<Integer> subscribersList;
     private ArrayList<Integer> contentId;
 
     public Channel(String channelName, String channelDescription, String channelCover, int channelOwnerId) {
-        this.channelId= idCounter++;
+        idCounter++;
+        this.channelId= idCounter;
         this.channelName = channelName;
         this.channelDescription = channelDescription;
         this.channelCover = channelCover;
         this.channelOwnerId = channelOwnerId;
         this.playlists = new ArrayList<>();
+        Playlist allContent = new Playlist("All Content");
+        this.playlists.add(allContent);
+        this.allContentPlaylistId = allContent.getId();
         this.subscribers = new ArrayList<>();
         this.subscribersList = new ArrayList<>();
         this.contentId = new ArrayList<>();
     }
-    public int getChannelId() {
+
+    public int getAllContentPlaylistId() {
+        return allContentPlaylistId;
+    }
+
+        public int getChannelId() {
         return channelId;
     }
     public void setChannelId(int channelId) {
@@ -66,5 +76,8 @@ public class Channel {
     }
     public ArrayList<Integer> getContentId() {
         return contentId;
+    }
+    public Playlist getPlaylistById(int playlistId) {
+        return playlists.stream().filter(playlist -> playlist.getId() == playlistId).findFirst().orElse(null);
     }
 }
