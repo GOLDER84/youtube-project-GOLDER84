@@ -4,7 +4,7 @@ public class Admin extends Account{
     private static Admin instance;
 
     public Admin() {
-        super("admin", "admin123", "System Admin",
+        super("Admin", "123", "System Admin",
                 "admin123@gmail.com", "1234567890", "default_admin_cover.jpg");
     }
 
