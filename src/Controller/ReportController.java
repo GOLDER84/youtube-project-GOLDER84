@@ -5,11 +5,10 @@ import java.util.ArrayList;
 
 public class ReportController {
     private Report report;
-    private DatabaseController databaseController;
+    private DatabaseController databaseController = DatabaseController.getInstance();
     private static ReportController instance;
 
     public ReportController() {
-        this.databaseController = DatabaseController.getInstance();
     }
     public static ReportController getInstance() {
         if (instance == null) {
