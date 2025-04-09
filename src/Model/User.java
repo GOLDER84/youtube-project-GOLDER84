@@ -41,6 +41,9 @@ public abstract class User extends Account{
     public Channel getUserChannel() {
         return userChannel;
     }
+    public int getUserChannelById(){
+        return getUserChannel().getChannelId();
+    }
 
     public void setUserChannel(Channel userChannel) {
         this.userChannel = userChannel;
@@ -74,4 +77,13 @@ public abstract class User extends Account{
             this.userChannel = new Channel(name , description , cover , getId());
         }
     }
+    public Playlist getPlaylistById(int id) {
+        for (Playlist playlist : playlists) {
+            if (playlist.getId() == id) {
+                return playlist;
+            }
+        }
+        return null;
+    }
+
 }
