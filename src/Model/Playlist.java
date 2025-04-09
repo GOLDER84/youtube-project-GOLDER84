@@ -10,7 +10,12 @@ public class Playlist {
     private ArrayList<Content> contentList;
 
     public Playlist(String playlistName) {
-        this.id = idCounter++;
+        if (playlistName.equals("Liked")||playlistName.equals("Watch Later")||playlistName.equals("All Content")){
+            this.id=-1;
+        }else {
+            idCounter++;
+            this.id = idCounter;
+        }
         this.playlistLimit = 10;
         this.playlistName = playlistName;
         this.contentList = new ArrayList<>();
