@@ -5,8 +5,8 @@ public class NormalVideo extends Video {
     private Format format;
     private Quality quality;
 
-    public NormalVideo(int ownerId, int channelId, String name, String description, int duration, Category category, String fileLink, String cover, String subtitles , Format format, Quality quality) {
-        super(ownerId, channelId, name, description, duration, category, fileLink, cover, subtitles);
+    public NormalVideo(int ownerId, int channelId, String name,boolean isExclusive, String description, String duration, Category category, String fileLink, String cover, String subtitles , Format format, Quality quality) {
+        super(ownerId, channelId, name,isExclusive ,description, duration, category, fileLink, cover, subtitles);
         this.format = format;
         this.quality = quality;
     }
