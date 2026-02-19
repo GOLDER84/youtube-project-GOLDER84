@@ -51,23 +51,6 @@ The project follows a structured design inspired by MVC:
 
 ---
 
-## 📂 Project Structure
-
-YoutubeClone/
-│
-├── models/
-│ ├── User.java
-│ ├── Video.java
-│ ├── Comment.java
-│
-├── controllers/
-│
-├── services/
-│
-└── Main.java
-
----
-
 ## ▶️ How to Run
 
 1️⃣ Clone the repository
